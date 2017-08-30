@@ -1,4 +1,4 @@
-/ Modified copy of https://github.com/eidheim/Simple-Web-Server/blob/master/server_http.hpp
+// Modified copy of https://github.com/eidheim/Simple-Web-Server/blob/master/server_http.hpp
 
 #ifndef SERVER_HTTP_HPP
 #define	SERVER_HTTP_HPP
@@ -71,8 +71,9 @@ namespace SimpleWeb {
               }
             };
         public:
-            std::string method, path, http_version;
-
+            std::string method, path;
+            double http_version;
+            
             Content content;
 
             std::unordered_multimap<std::string, std::string, ihash, iequal_to> header;
@@ -296,7 +297,14 @@ namespace SimpleWeb {
                     if((protocol_end=line.find('/', path_end+1))!=std::string::npos) {
                         if(line.substr(path_end+1, protocol_end-path_end-1)!="HTTP")
                             return false;
-                        request->http_version=line.substr(protocol_end+1, line.size()-protocol_end-2);
+                        
+                        char* p;
+                        double double_ver = std::strtod(line.substr(protocol_end+1, line.size()-protocol_end-2).c_str(),&p);
+                        if (*p){
+                            return false;
+                        }
+                        request->http_version=double_ver;
+                        
                     }
                     else
                         return false;
@@ -357,14 +365,7 @@ namespace SimpleWeb {
                     if(!ec) {
                         if(timeout_content>0)
                             timer->cancel();
-                        double http_version;
-                        try{
-                            http_version=stof(request->http_version);
-                        }catch(const std::exception& e){
-                            if(exception_handler)
-                                exception_handler(e);
-                            return;
-                        }
+                        auto http_version= request->http_version;
                         
                         auto range=request->header.equal_range("Connection");
                         for(auto it=range.first;it!=range.second;it++) {
