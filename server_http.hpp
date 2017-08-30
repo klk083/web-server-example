@@ -71,9 +71,8 @@ namespace SimpleWeb {
               }
             };
         public:
-            std::string method, path;
-            double http_version;
-            
+            std::string method, path, http_version;
+
             Content content;
 
             std::unordered_multimap<std::string, std::string, ihash, iequal_to> header;
@@ -297,14 +296,7 @@ namespace SimpleWeb {
                     if((protocol_end=line.find('/', path_end+1))!=std::string::npos) {
                         if(line.substr(path_end+1, protocol_end-path_end-1)!="HTTP")
                             return false;
-                        
-                        char* p;
-                        double double_ver = std::strtod(line.substr(protocol_end+1, line.size()-protocol_end-2).c_str(),&p);
-                        if (*p){
-                            return false;
-                        }
-                        request->http_version=double_ver;
-                        
+                        request->http_version=line.substr(protocol_end+1, line.size()-protocol_end-2);
                     }
                     else
                         return false;
@@ -365,7 +357,15 @@ namespace SimpleWeb {
                     if(!ec) {
                         if(timeout_content>0)
                             timer->cancel();
-                        auto http_version= request->http_version;
+                         
+                        float http_version;
+                        
+                        try{
+                            http_version=stof(request->http_version);
+                        }
+                        catch(const std::exception& e){
+                            return;
+                        }
                         
                         auto range=request->header.equal_range("Connection");
                         for(auto it=range.first;it!=range.second;it++) {
